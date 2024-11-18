@@ -190,7 +190,7 @@ public class GeotoolsXSDUtil {
             SimpleFeatureType sft = dataStore.getSchema("bis:Square");
 
             QName qName = dataStore.getRemoteTypeName(sft.getName());
-            String geomColumn = getGeomColumn(dataStore, qName);
+            String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
 
             QName qNameCol = new QName(geomColumn);
 
@@ -215,8 +215,7 @@ public class GeotoolsXSDUtil {
         return result;
     }
 
-    public static FeatureId createGeometry1(Geometry geometry)
-            throws IOException, FactoryException, NoninvertibleTransformException, ServiceException {
+    public static FeatureId createGeometry1(Geometry geometry) throws IOException {
         WFSDataStore dataStore = getDataStore();
 
         SimpleFeatureType sft = dataStore.getSchema("bis:Square");
@@ -227,7 +226,7 @@ public class GeotoolsXSDUtil {
         CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
 
         // получение названия колонки с геометрией
-        String geomColumn = getGeomColumn(dataStore, qName);
+        String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
 
         String key = UUIDUtil.sqUUID().toString();
 
@@ -272,23 +271,18 @@ public class GeotoolsXSDUtil {
         CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
 
         // получение названия колонки с геометрией
-        String geomColumn = getGeomColumn(dataStore, qName);
+//        String geomColumn = getGeomColumn(dataStore, qName);
+        String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
 
         String key = UUIDUtil.sqUUID().toString();
 
         SimpleFeatureTypeBuilder typeBuilder = getFeatureTypeBuilder(qName, crs);
         typeBuilder.add(geomColumn, Geometry.class);
-        typeBuilder.userData(Hints.USE_PROVIDED_FID, true);
-        typeBuilder.userData(Hints.PROVIDED_FID, key);
-        typeBuilder.userData("idgen", "UseExisting");
 
 
 
         SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
         featureBuilder.add(geometry);
-        featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, true);
-        featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
-        featureBuilder.featureUserData("idgen", "UseExisting");
 
         SimpleFeature feature = featureBuilder.buildFeature(key);
         feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
@@ -360,40 +354,4 @@ public class GeotoolsXSDUtil {
 
         return action.apply(response);
     }
-
-    /** Получение наименование колонки с геометрией */
-    public static String getGeomColumn(WFSDataStore dataStore, QName qName) throws IOException {
-        //dataStore.getSchema("sdfds:fdsfds").getGeometryDescriptor().getName();
-
-        String geomColumn = dataStore
-                .getRemoteSimpleFeatureType(qName)
-                .getTypes()
-                .stream()
-                .filter(at -> at.getBinding().equals(Geometry.class))
-                .map(PropertyType::getName)
-                .map(Name::toString)
-                .findFirst()
-                .orElse(null);
-
-        if (geomColumn == null)
-            throw new RuntimeException("Not found column with geometry!");
-
-        return geomColumn;
-    }
-
-//    public static Name getNameGeomColumn(WFSDataStore dataStore, QName qName) throws IOException {
-//        Name geomColumn = dataStore
-//                .getRemoteSimpleFeatureType(qName)
-//                .getTypes()
-//                .stream()
-//                .filter(at -> at.getBinding().equals(Geometry.class))
-//                .map(AttributeType::getName)
-//                .findFirst()
-//                .orElse(null);
-//
-//        if (geomColumn == null)
-//            throw new RuntimeException("Not found column with geometry!");
-//
-//        return geomColumn;
-//    }
 }
