@@ -363,6 +363,8 @@ public class GeotoolsXSDUtil {
 
     /** Получение наименование колонки с геометрией */
     public static String getGeomColumn(WFSDataStore dataStore, QName qName) throws IOException {
+        //dataStore.getSchema("sdfds:fdsfds").getGeometryDescriptor().getName();
+
         String geomColumn = dataStore
                 .getRemoteSimpleFeatureType(qName)
                 .getTypes()
