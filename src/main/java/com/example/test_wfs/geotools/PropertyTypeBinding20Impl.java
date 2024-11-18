@@ -54,8 +54,8 @@ public class PropertyTypeBinding20Impl extends AbstractComplexEMFBinding {
                                 WFS.Value.getLocalPart(),
                                 "wfs:" + WFS.Value.getLocalPart(),
                                 new AttributesImpl());
-                        if (value instanceof Geometry g) {
-
+                        if (value instanceof Geometry) {
+                            Geometry g = (Geometry) value;
                             Encoder encoder = new Encoder(new GMLConfiguration());
                             encoder.setNamespaceAware(false);
                             encoder.setOmitXMLDeclaration(true);

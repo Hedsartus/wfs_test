@@ -1,29 +1,22 @@
 package com.example.test_wfs;
 
 import com.example.test_wfs.geotools.WFSDataStoreFactoryImpl;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
+//import com.github.benmanes.caffeine.cache.Cache;
+//import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.experimental.UtilityClass;
-import org.geotools.api.data.Query;
-import org.geotools.api.data.SimpleFeatureSource;
-import org.geotools.api.data.Transaction;
-import org.geotools.api.feature.simple.SimpleFeature;
-import org.geotools.api.feature.simple.SimpleFeatureType;
-import org.geotools.api.feature.type.AttributeType;
-import org.geotools.api.feature.type.Name;
-import org.geotools.api.filter.Filter;
-import org.geotools.api.filter.FilterFactory;
-import org.geotools.api.filter.identity.FeatureId;
-import org.geotools.api.referencing.FactoryException;
-import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
-import org.geotools.api.referencing.operation.NoninvertibleTransformException;
+import org.geotools.data.Query;
+import org.geotools.data.Transaction;
+import org.geotools.data.memory.MemoryFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.data.wfs.WFSDataStore;
 import org.geotools.data.wfs.WFSDataStoreFactory;
 import org.geotools.data.wfs.internal.TransactionRequest;
 import org.geotools.data.wfs.internal.TransactionResponse;
 import org.geotools.factory.CommonFactoryFinder;
+import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.ows.ServiceException;
@@ -32,6 +25,7 @@ import org.geotools.util.factory.Hints;
 import org.locationtech.jts.geom.Geometry;
 
 import javax.xml.namespace.QName;
+import java.awt.geom.NoninvertibleTransformException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
@@ -39,21 +33,30 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.isNull;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
+import org.opengis.feature.type.Name;
+import org.opengis.feature.type.PropertyType;
+import org.opengis.filter.Filter;
+import org.opengis.filter.FilterFactory;
+import org.opengis.filter.identity.FeatureId;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 @UtilityClass
 public class GeotoolsXSDUtil {
     public final static FilterFactory ff = CommonFactoryFinder.getFilterFactory();
-    private final static Cache<Integer, WFSDataStore> dataStoreCache =
-            Caffeine.newBuilder()
-                    .maximumSize(1000)
-                    .expireAfterWrite(Duration.ofMinutes(2))
-                    .build();
-
-    private final static Cache<Integer, SimpleFeatureSource> sourceStoreCache =
-            Caffeine.newBuilder()
-                    .maximumSize(1000)
-                    .expireAfterWrite(Duration.ofMinutes(2))
-                    .build();
+//    private final static Cache<Integer, WFSDataStore> dataStoreCache =
+//            Caffeine.newBuilder()
+//                    .maximumSize(1000)
+//                    .expireAfterWrite(Duration.ofMinutes(2))
+//                    .build();
+//
+//    private final static Cache<Integer, SimpleFeatureSource> sourceStoreCache =
+//            Caffeine.newBuilder()
+//                    .maximumSize(1000)
+//                    .expireAfterWrite(Duration.ofMinutes(2))
+//                    .build();
     private final static WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
 //    private final static WFSDataStoreFactory dsf = new WFSDataStoreFactory();
 
@@ -71,35 +74,48 @@ public class GeotoolsXSDUtil {
 
     /** Получение из кеша WFSDataStore */
     public static WFSDataStore getDataStore() {
-        return getCachedOrNew(dataStoreCache, 1, () -> {
-            try {
-                return dsf.createDataStore(connectionProperties());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try {
+            return dsf.createDataStore(connectionProperties());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+//        return getCachedOrNew(dataStoreCache, 1, () -> {
+//            try {
+//                return dsf.createDataStore(connectionProperties());
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
     }
 
     /** Получение из кеша SimpleFeatureSource */
     public static SimpleFeatureSource getFeatureSource() {
-        return getCachedOrNew(sourceStoreCache, 1, () -> {
-            try {
-                return getDataStore().getFeatureSource("MO:Square");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+
+        try {
+            return getDataStore().getFeatureSource("MO:Square");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+//        return getCachedOrNew(sourceStoreCache, 1, () -> {
+//            try {
+//                return getDataStore().getFeatureSource("MO:Square");
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
     }
 
-    /** Метод получения объекта из кеша либо добавление нового объекта с возвратом */
-    private static <K, V> V getCachedOrNew(Cache<K, V> cache, K key, Supplier<V> supplier) {
-        V value = cache.getIfPresent(key);
-        if (value == null) {
-            value = supplier.get();
-            cache.put(key, value);
-        }
-        return value;
-    }
+//    /** Метод получения объекта из кеша либо добавление нового объекта с возвратом */
+//    private static <K, V> V getCachedOrNew(Cache<K, V> cache, K key, Supplier<V> supplier) {
+//        V value = cache.getIfPresent(key);
+//        if (value == null) {
+//            value = supplier.get();
+//            cache.put(key, value);
+//        }
+//        return value;
+//    }
 
     /** Извлечение идентификатора */
     public static String getId(String featureId) {
@@ -111,31 +127,34 @@ public class GeotoolsXSDUtil {
         return splitId[1];
     }
 
-    public static boolean updateGeometry1(Geometry geometry, String sid) {
-        WFSDataStore dataStore = getDataStore();
-        Filter idFilter = ff.id(ff.featureId(sid));
-
-        try {
-            try (var w = dataStore.getFeatureWriter("bis:Square", idFilter, Transaction.AUTO_COMMIT)) {
-                if(w.hasNext()) {
-                    SimpleFeature f = w.next();
-                    System.out.println("FEATURE : \n"+f);
-                    f.setDefaultGeometry(geometry);
-
-                    w.write();
-                    return true;
-                }
-
-                throw new RuntimeException("EMPTY!");
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
+//    public static boolean updateGeometry1(Geometry geometry, String sid) {
+//        WFSDataStore dataStore = getDataStore();
+//
+//        Set<FeatureId> ids = new HashSet();
+//        ids.add(ff.featureId(sid));
+//        Filter idFilter = ff.id(ids);
+//
+//        try {
+//            try (var w = dataStore.getFeatureWriter("bis:Square", idFilter, Transaction.AUTO_COMMIT)) {
+//                if(w.hasNext()) {
+//                    SimpleFeature f = w.next();
+//                    System.out.println("FEATURE : \n"+f);
+//                    f.setDefaultGeometry(geometry);
+//
+//                    w.write();
+//                    return true;
+//                }
+//
+//                throw new RuntimeException("EMPTY!");
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                throw new RuntimeException(e);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     public static <T> List<T> extractFeature(SimpleFeatureCollection fc, Function<SimpleFeature, T> action) {
         List<T> result = new ArrayList<>();
@@ -156,7 +175,7 @@ public class GeotoolsXSDUtil {
             query.setFilter(filter);
             query.setCoordinateSystem(DefaultGeographicCRS.WGS84);
 
-            SimpleFeature feature = extractFeature(fc, (sf) -> sf).getFirst();
+            SimpleFeature feature = extractFeature(fc, (sf) -> sf).get(0);
 
             if (isNull(feature))
                 throw new IllegalStateException("SimpleFeature not found!");
@@ -177,12 +196,70 @@ public class GeotoolsXSDUtil {
 
             Filter idFilter = ff.id(Collections.singleton(ff.featureId(sid)));
 
-            return updateTransaction(dataStore, qName, List.of(qNameCol), List.of(geometry), idFilter);
+            return updateTransaction(dataStore, qName, listOf(qNameCol), listOf(geometry), idFilter);
         } catch (IOException e) {
             System.out.println("ERROR : " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
+
+    public <T> List<T> listOf(T obj) {
+        List<T> result = new ArrayList<>();
+        result.add(obj);
+        return result;
+    }
+
+    public <T> Set<T> setOf(T obj) {
+        Set<T> result = new HashSet<>();
+        result.add(obj);
+        return result;
+    }
+
+    public static FeatureId createGeometry1(Geometry geometry)
+            throws IOException, FactoryException, NoninvertibleTransformException, ServiceException {
+        WFSDataStore dataStore = getDataStore();
+
+        SimpleFeatureType sft = dataStore.getSchema("bis:Square");
+        QName qName = dataStore.getRemoteTypeName(sft.getName());
+
+
+        // получение системы координат слоя
+        CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
+
+        // получение названия колонки с геометрией
+        String geomColumn = getGeomColumn(dataStore, qName);
+
+        String key = UUIDUtil.sqUUID().toString();
+
+        SimpleFeatureTypeBuilder typeBuilder = getFeatureTypeBuilder(qName, crs);
+        typeBuilder.add(geomColumn, Geometry.class);
+
+        SimpleFeatureType type = typeBuilder.buildFeatureType();
+
+        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(type);
+        featureBuilder.add(geometry);
+        featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, true);
+        //featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
+
+        SimpleFeature feature = featureBuilder.buildFeature(key);
+        feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
+
+        DefaultFeatureCollection collection = new DefaultFeatureCollection();
+        collection.add(feature);
+
+        SimpleFeatureSource featureSource = dataStore.getFeatureSource(sft.getName());
+
+        System.out.println("SUPPORT : " + featureSource.getQueryCapabilities().isUseProvidedFIDSupported());
+
+
+
+        SimpleFeatureStore store = (SimpleFeatureStore) featureSource;
+        List<FeatureId> fids =  store.addFeatures(collection);
+
+        return fids.get(0);
+    }
+
+
 
     public static FeatureId createGeometry(Geometry geometry)
             throws IOException, FactoryException, NoninvertibleTransformException, ServiceException {
@@ -192,7 +269,7 @@ public class GeotoolsXSDUtil {
         QName qName = dataStore.getRemoteTypeName(sft.getName());
 
         // получение системы координат слоя
-        var crs = sft.getCoordinateReferenceSystem();
+        CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
 
         // получение названия колонки с геометрией
         String geomColumn = getGeomColumn(dataStore, qName);
@@ -203,6 +280,7 @@ public class GeotoolsXSDUtil {
         typeBuilder.add(geomColumn, Geometry.class);
         typeBuilder.userData(Hints.USE_PROVIDED_FID, true);
         typeBuilder.userData(Hints.PROVIDED_FID, key);
+        typeBuilder.userData("idgen", "UseExisting");
 
 
 
@@ -210,8 +288,10 @@ public class GeotoolsXSDUtil {
         featureBuilder.add(geometry);
         featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, true);
         featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
+        featureBuilder.featureUserData("idgen", "UseExisting");
 
         SimpleFeature feature = featureBuilder.buildFeature(key);
+        feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
 
 
         return insertTransaction(dataStore, feature, qName);
@@ -231,7 +311,7 @@ public class GeotoolsXSDUtil {
         TransactionRequest.Insert insert = transactionRequest.createInsert(qName);
         insert.add(feature);
         transactionRequest.add(insert);
-
+        transactionRequest.setProperty("idgen", "UseExisting");
 
         Function<TransactionResponse, FeatureId> action = (response) ->
                 response
@@ -261,7 +341,7 @@ public class GeotoolsXSDUtil {
             QName qName = dataStore.getRemoteTypeName(sft.getName());
 
             TransactionRequest transactionRequest = dataStore.getWfsClient().createTransaction();
-            TransactionRequest.Delete delete = transactionRequest.createDelete(qName, ff.id(ff.featureId(sid)));
+            TransactionRequest.Delete delete = transactionRequest.createDelete(qName, ff.id(setOf(ff.featureId(sid))));
             transactionRequest.add(delete);
 
             return transaction(dataStore, transactionRequest, TransactionResponse::getDeleteCount) > 0;
@@ -288,7 +368,7 @@ public class GeotoolsXSDUtil {
                 .getTypes()
                 .stream()
                 .filter(at -> at.getBinding().equals(Geometry.class))
-                .map(AttributeType::getName)
+                .map(PropertyType::getName)
                 .map(Name::toString)
                 .findFirst()
                 .orElse(null);
@@ -299,19 +379,19 @@ public class GeotoolsXSDUtil {
         return geomColumn;
     }
 
-    public static Name getNameGeomColumn(WFSDataStore dataStore, QName qName) throws IOException {
-        Name geomColumn = dataStore
-                .getRemoteSimpleFeatureType(qName)
-                .getTypes()
-                .stream()
-                .filter(at -> at.getBinding().equals(Geometry.class))
-                .map(AttributeType::getName)
-                .findFirst()
-                .orElse(null);
-
-        if (geomColumn == null)
-            throw new RuntimeException("Not found column with geometry!");
-
-        return geomColumn;
-    }
+//    public static Name getNameGeomColumn(WFSDataStore dataStore, QName qName) throws IOException {
+//        Name geomColumn = dataStore
+//                .getRemoteSimpleFeatureType(qName)
+//                .getTypes()
+//                .stream()
+//                .filter(at -> at.getBinding().equals(Geometry.class))
+//                .map(AttributeType::getName)
+//                .findFirst()
+//                .orElse(null);
+//
+//        if (geomColumn == null)
+//            throw new RuntimeException("Not found column with geometry!");
+//
+//        return geomColumn;
+//    }
 }

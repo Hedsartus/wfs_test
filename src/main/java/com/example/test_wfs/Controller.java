@@ -1,15 +1,16 @@
 package com.example.test_wfs;
 
-import org.geotools.api.filter.identity.FeatureId;
-import org.geotools.api.referencing.FactoryException;
-import org.geotools.api.referencing.operation.NoninvertibleTransformException;
+
 import org.geotools.ows.ServiceException;
 import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
+import org.opengis.filter.identity.FeatureId;
+import org.opengis.referencing.FactoryException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.awt.geom.NoninvertibleTransformException;
 import java.io.IOException;
 
 @RestController

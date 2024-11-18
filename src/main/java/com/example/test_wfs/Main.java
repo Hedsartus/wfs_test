@@ -1,33 +1,23 @@
 package com.example.test_wfs;
 
 
-import org.apache.tomcat.util.descriptor.XmlErrorHandler;
-import org.eclipse.xsd.XSDElementDeclaration;
-import org.eclipse.xsd.XSDSchema;
-import org.geotools.gml2.simple.GMLWriter;
-import org.geotools.gml3.GML;
-import org.geotools.gml3.GMLConfiguration;
-import org.geotools.gml3.bindings.GML3EncodingUtils;
-import org.geotools.gml3.simple.GenericGeometryEncoder;
-import org.geotools.xsd.Encoder;
-import org.geotools.xsd.impl.SchemaIndexImpl;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
-import org.locationtech.jts.io.gml2.GMLHandler;
-import org.picocontainer.ComponentAdapter;
-import org.xml.sax.ContentHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
-import org.xml.sax.helpers.NamespaceSupport;
 
 import javax.xml.XMLConstants;
-import javax.xml.transform.*;
-import javax.xml.transform.sax.SAXTransformerFactory;
-import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.*;
-import java.util.*;
+import java.io.StringReader;
+import java.io.StringWriter;
 
 
 public class Main {
@@ -36,19 +26,6 @@ public class Main {
 //
 //        WFSDataStore dataStore = GeotoolsXSDUtil.getDataStore();
 //
-////        WFSClientImpl wfsClient = (WFSClientImpl) dataStore.getWfsClient();
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
 //        SimpleFeatureType sft = dataStore.getSchema("bis:Square");
 //
 //        QName qName = dataStore.getRemoteTypeName(sft.getName());
@@ -56,7 +33,7 @@ public class Main {
 //        // получение системы координат слоя
 //        var crs = sft.getCoordinateReferenceSystem();
 //
-//        QName qNameCol = new QName(GML.Version.GML3.name(), geomColumn);
+//        //QName qNameCol = new QName(GML.Version.GML3.name(), geomColumn);
 //        Filter idFilter = ff.id(ff.featureId("7196237a-d16d-41e0-b089-06d9d10cdb8c"));
 //
 //
@@ -68,13 +45,10 @@ public class Main {
 //
 //        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
 //        featureBuilder.add(getGeometry());
-//        featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, Boolean.TRUE);
-//        featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
+//        //featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, Boolean.TRUE);
+//        //featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
 //
 //        SimpleFeature feature = featureBuilder.buildFeature(key);
-//
-//
-//
 //
 //        try (OutputStream out = new ByteArrayOutputStream()) {
 //            org.geotools.gml3.GMLConfiguration configuration = new GMLConfiguration();
@@ -90,7 +64,12 @@ public class Main {
 ////            insert.add(feature);
 ////            transactionRequest.add(insert);
 //
+//
 //            //SimpleFeature simpleFeature = new SimpleFeatureImpl();
+//
+//            StrictWFS_1_x_Strategy strategy = new StrictWFS_1_x_Strategy(new Version("1.1.0"));
+//
+//            strategy.cr
 //
 //            WfsFactory factory = WfsFactory.eINSTANCE;
 //            InsertElementType insert = factory.createInsertElementType();
@@ -98,8 +77,8 @@ public class Main {
 //            insert.getFeature().add(feature);
 //
 //            Encoder encoder = new Encoder(config);
-//            encoder.encode(getGeometry(), org.geotools.gml2.GML._Geometry, out);
-//            System.out.println("GEOMETRY : \n" + out);
+//            encoder.encode(insert, WFS.TransactionResults, out);
+//            System.out.println("GEOMETRY : \n" + prettyFormat(out.toString(), 2));
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
@@ -162,34 +141,34 @@ public class Main {
 //        }
 //    }
 
-    public static void main(String[] args) throws Exception {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Encoder encoder = new Encoder(new GMLConfiguration());
-
-
-        GenericGeometryEncoder geometryEncoder = new GenericGeometryEncoder(encoder, "gml", "http://www.opengis.net/gml/3.2");
-
-        // create the document serializer
-        SAXTransformerFactory txFactory = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
-        TransformerHandler xmls = txFactory.newTransformerHandler();
-
-        xmls.setResult(new StreamResult(out));
-
-        GMLWriter handler =
-                new GMLWriter(
-                        xmls,
-                        encoder.getNamespaces(),
-                        6,
-                        false,
-                        false,
-                        "gml",
-                        false);
-        handler.startDocument();
-        geometryEncoder.encode(getGeometry(), new AttributesImpl(), handler);
-        handler.endDocument();
-
-        System.out.println("GEOMETRY : \n" + prettyFormat(out.toString(), 2));
-    }
+//    public static void main(String[] args) throws Exception {
+//        ByteArrayOutputStream out = new ByteArrayOutputStream();
+//        Encoder encoder = new Encoder(new GMLConfiguration());
+//
+//
+//        GenericGeometryEncoder geometryEncoder = new GenericGeometryEncoder(encoder, "gml", "http://www.opengis.net/gml/3.2");
+//
+//        // create the document serializer
+//        SAXTransformerFactory txFactory = (SAXTransformerFactory) SAXTransformerFactory.newInstance();
+//        TransformerHandler xmls = txFactory.newTransformerHandler();
+//
+//        xmls.setResult(new StreamResult(out));
+//
+//        GMLWriter handler =
+//                new GMLWriter(
+//                        xmls,
+//                        encoder.getNamespaces(),
+//                        6,
+//                        false,
+//                        false,
+//                        "gml",
+//                        false);
+//        handler.startDocument();
+//        geometryEncoder.encode(getGeometry(), new AttributesImpl(), handler);
+//        handler.endDocument();
+//
+//        System.out.println("GEOMETRY : \n" + prettyFormat(out.toString(), 2));
+//    }
 
     public static String prettyFormat(String input, int indent) {
         try {

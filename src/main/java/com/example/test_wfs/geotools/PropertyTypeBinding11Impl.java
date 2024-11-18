@@ -57,12 +57,14 @@ public class PropertyTypeBinding11Impl extends AbstractComplexEMFBinding {
 
                         output.startElement(
                                 WFS.NAMESPACE, VALUE, "wfs:" + VALUE, new AttributesImpl());
-                        if (value instanceof Geometry g) {
+                        if (value instanceof Geometry) {
+                            Geometry g = (Geometry) value;
+
                             Encoder encoder = new Encoder(new GMLConfiguration());
                             encoder.setNamespaceAware(false);
                             encoder.setOmitXMLDeclaration(false);
 
-//                            GenericGeometryEncoder geometryEncoder = new GenericGeometryEncoder(encoder, "gml", "http://www.opengis.net/gml/3.1.1");
+
                             GenericGeometryEncoder geometryEncoder = new GenericGeometryEncoder(encoder);
 
                             NamespaceSupport namespaceSupport = new NamespaceSupport();

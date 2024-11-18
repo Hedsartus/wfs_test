@@ -56,6 +56,7 @@ public class WFSDataStoreFactoryImpl extends WFSDataStoreFactory {
 		dataStore.setNamespaceURI(config.getNamespaceOverride());
 
 
+
 		return dataStore;
 	}
 }
