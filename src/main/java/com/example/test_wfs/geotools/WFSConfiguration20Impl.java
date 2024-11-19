@@ -1,7 +1,10 @@
 package com.example.test_wfs.geotools;
 
-import net.opengis.wfs20.*;
-import org.geotools.wfs.bindings.*;
+import java.util.Map;
+
+import javax.xml.namespace.QName;
+
+import org.geotools.wfs.bindings.FeatureCollectionTypeBinding;
 import org.geotools.wfs.bindings.FeatureTypeListTypeBinding;
 import org.geotools.wfs.bindings.FeatureTypeTypeBinding;
 import org.geotools.wfs.bindings.MetadataURLTypeBinding;
@@ -11,15 +14,25 @@ import org.geotools.wfs.bindings.WFS_CapabilitiesTypeBinding;
 import org.geotools.wfs.v2_0.MemberPropertyTypeBinding;
 import org.geotools.wfs.v2_0.WFS;
 import org.geotools.wfs.v2_0.WFSConfiguration;
-import org.geotools.wfs.v2_0.bindings.*;
+import org.geotools.wfs.v2_0.bindings.EnvelopePropertyTypeBinding;
+import org.geotools.wfs.v2_0.bindings.InsertTypeBinding;
+import org.geotools.wfs.v2_0.bindings.ParameterTypeBinding;
+import org.geotools.wfs.v2_0.bindings.QueryExpressionTextTypeBinding;
+import org.geotools.wfs.v2_0.bindings.ReturnFeatureTypesListTypeBinding;
+import org.geotools.wfs.v2_0.bindings.TupleTypeBinding;
+import org.geotools.wfs.v2_0.bindings.ValueCollectionTypeBinding;
+import org.geotools.wfs.v2_0.bindings.ValueReferenceTypeBinding;
 import org.geotools.xs.bindings.XSQNameBinding;
 import org.geotools.xsd.ComplexEMFBinding;
 import org.geotools.xsd.EnumSimpleBinding;
 import org.geotools.xsd.SimpleContentComplexEMFBinding;
-import org.picocontainer.MutablePicoContainer;
 
-import javax.xml.namespace.QName;
-import java.util.Map;
+import net.opengis.wfs20.AllSomeType;
+import net.opengis.wfs20.DropStoredQueryType;
+import net.opengis.wfs20.ResolveValueType;
+import net.opengis.wfs20.ResultTypeType;
+import net.opengis.wfs20.UpdateActionType;
+import net.opengis.wfs20.Wfs20Factory;
 
 public class WFSConfiguration20Impl extends WFSConfiguration {
 

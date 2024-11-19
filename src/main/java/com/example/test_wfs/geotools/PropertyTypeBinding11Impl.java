@@ -1,20 +1,24 @@
 package com.example.test_wfs.geotools;
 
-import net.opengis.wfs.PropertyType;
-import net.opengis.wfs.WfsFactory;
-import org.geotools.gml2.GML;
+import javax.xml.namespace.QName;
+
 import org.geotools.gml2.simple.GMLWriter;
 import org.geotools.gml3.GMLConfiguration;
 import org.geotools.gml3.simple.GenericGeometryEncoder;
 import org.geotools.wfs.WFS;
-import org.geotools.xsd.*;
+import org.geotools.xsd.AbstractComplexEMFBinding;
+import org.geotools.xsd.ElementInstance;
+import org.geotools.xsd.Encoder;
+import org.geotools.xsd.EncoderDelegate;
+import org.geotools.xsd.Node;
 import org.locationtech.jts.geom.Geometry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.NamespaceSupport;
 
-import javax.xml.namespace.QName;
+import net.opengis.wfs.PropertyType;
+import net.opengis.wfs.WfsFactory;
 
 public class PropertyTypeBinding11Impl extends AbstractComplexEMFBinding {
 
