@@ -1,72 +1,60 @@
 package com.example.test_wfs;
 
-import com.example.test_wfs.geotools.WFSDataStoreFactoryImpl;
-//import com.github.benmanes.caffeine.cache.Cache;
-//import com.github.benmanes.caffeine.cache.Caffeine;
-import lombok.experimental.UtilityClass;
+import static java.util.Objects.isNull;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
+import javax.xml.namespace.QName;
+
 import org.geotools.data.Query;
-import org.geotools.data.Transaction;
-import org.geotools.data.memory.MemoryFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.data.wfs.WFSDataStore;
-import org.geotools.data.wfs.WFSDataStoreFactory;
+import org.geotools.data.wfs.impl.WFSDataAccessFactory;
 import org.geotools.data.wfs.internal.TransactionRequest;
 import org.geotools.data.wfs.internal.TransactionResponse;
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.DefaultFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.geotools.ows.ServiceException;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.util.factory.Hints;
 import org.locationtech.jts.geom.Geometry;
-
-import javax.xml.namespace.QName;
-import java.awt.geom.NoninvertibleTransformException;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static java.util.Objects.isNull;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.Name;
-import org.opengis.feature.type.PropertyType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.identity.FeatureId;
-import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+
+import com.example.test_wfs.geotools.WFSDataStoreFactoryImpl;
+
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class GeotoolsXSDUtil {
-    public final static FilterFactory ff = CommonFactoryFinder.getFilterFactory();
-//    private final static Cache<Integer, WFSDataStore> dataStoreCache =
-//            Caffeine.newBuilder()
-//                    .maximumSize(1000)
-//                    .expireAfterWrite(Duration.ofMinutes(2))
-//                    .build();
-//
-//    private final static Cache<Integer, SimpleFeatureSource> sourceStoreCache =
-//            Caffeine.newBuilder()
-//                    .maximumSize(1000)
-//                    .expireAfterWrite(Duration.ofMinutes(2))
-//                    .build();
-    private final static WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
-//    private final static WFSDataStoreFactory dsf = new WFSDataStoreFactory();
+	
+    public static final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
+
+    private static final WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
 
     /** Формирование параметров соединения с геосервером */
     public static Map<String, Object> connectionProperties() {
         Map<String, Object> params = new HashMap<>();
-        params.put(WFSDataStoreFactory.URL.getName(), "http://localhost:8383/geoserver/ows?service=wfs&REQUEST=GetCapabilities&version=1.1.0");
-        params.put(WFSDataStoreFactory.PASSWORD.getName(), "geoserver");
-        params.put(WFSDataStoreFactory.USERNAME.getName(), "admin");
-        params.put(WFSDataStoreFactory.USE_HTTP_CONNECTION_POOLING.getName(), true);
+        params.put(WFSDataAccessFactory.URL.getName(), "http://localhost:8383/geoserver/ows?service=wfs&REQUEST=GetCapabilities&version=1.1.0");
+        params.put(WFSDataAccessFactory.PASSWORD.getName(), "geoserver");
+        params.put(WFSDataAccessFactory.USERNAME.getName(), "admin");
+        params.put(WFSDataAccessFactory.USE_HTTP_CONNECTION_POOLING.getName(), true);
 
         return params;
     }
@@ -79,14 +67,6 @@ public class GeotoolsXSDUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-//        return getCachedOrNew(dataStoreCache, 1, () -> {
-//            try {
-//                return dsf.createDataStore(connectionProperties());
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
     }
 
     /** Получение из кеша SimpleFeatureSource */
@@ -97,25 +77,7 @@ public class GeotoolsXSDUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-//        return getCachedOrNew(sourceStoreCache, 1, () -> {
-//            try {
-//                return getDataStore().getFeatureSource("MO:Square");
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
     }
-
-//    /** Метод получения объекта из кеша либо добавление нового объекта с возвратом */
-//    private static <K, V> V getCachedOrNew(Cache<K, V> cache, K key, Supplier<V> supplier) {
-//        V value = cache.getIfPresent(key);
-//        if (value == null) {
-//            value = supplier.get();
-//            cache.put(key, value);
-//        }
-//        return value;
-//    }
 
     /** Извлечение идентификатора */
     public static String getId(String featureId) {
@@ -170,7 +132,7 @@ public class GeotoolsXSDUtil {
         return result;
     }
 
-    private SimpleFeature getFeature(String sid, Filter filter, SimpleFeatureCollection fc) {
+    public SimpleFeature getFeature(String sid, Filter filter, SimpleFeatureCollection fc) {
             Query query = new Query();
             query.setFilter(filter);
             query.setCoordinateSystem(DefaultGeographicCRS.WGS84);
@@ -189,8 +151,12 @@ public class GeotoolsXSDUtil {
         try {
             SimpleFeatureType sft = dataStore.getSchema("bis:Square");
 
-            QName qName = dataStore.getRemoteTypeName(sft.getName());
-            String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
+            QName qName = dataStore.getRemoteTypeName(
+            	sft.getName());
+            
+            String geomColumn = sft.getGeometryDescriptor()
+            	.getName()
+            	.getLocalPart();
 
             QName qNameCol = new QName(geomColumn);
 
@@ -226,7 +192,9 @@ public class GeotoolsXSDUtil {
         CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
 
         // получение названия колонки с геометрией
-        String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
+        String geomColumn = sft.getGeometryDescriptor()
+        	.getName()
+        	.getLocalPart();
 
         String key = UUIDUtil.sqUUID().toString();
 
@@ -260,8 +228,7 @@ public class GeotoolsXSDUtil {
 
 
 
-    public static FeatureId createGeometry(Geometry geometry)
-            throws IOException, FactoryException, NoninvertibleTransformException, ServiceException {
+    public static FeatureId createGeometry ( Geometry geometry ) throws IOException {
         WFSDataStore dataStore = getDataStore();
 
         SimpleFeatureType sft = dataStore.getSchema("bis:Square");
@@ -272,7 +239,9 @@ public class GeotoolsXSDUtil {
 
         // получение названия колонки с геометрией
 //        String geomColumn = getGeomColumn(dataStore, qName);
-        String geomColumn = dataStore.getSchema("bis:Square").getGeometryDescriptor().getName().getLocalPart();
+        String geomColumn = sft.getGeometryDescriptor()
+        	.getName()
+        	.getLocalPart();
 
         String key = UUIDUtil.sqUUID().toString();
 

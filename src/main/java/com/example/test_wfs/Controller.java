@@ -1,17 +1,17 @@
 package com.example.test_wfs;
 
 
-import org.geotools.ows.ServiceException;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import org.opengis.filter.identity.FeatureId;
-import org.opengis.referencing.FactoryException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.awt.geom.NoninvertibleTransformException;
-import java.io.IOException;
 
 @RestController
 public class Controller {
@@ -19,7 +19,7 @@ public class Controller {
     public FeatureId insert() {
         try {
             return GeotoolsXSDUtil.createGeometry(getGeometry());
-        } catch (IOException | FactoryException | NoninvertibleTransformException | ServiceException e) {
+        } catch ( Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -34,7 +34,7 @@ public class Controller {
         return GeotoolsXSDUtil.deleteGeometry(sid);
     }
 
-    public Geometry getGeometry() {
+    public static Geometry getGeometry() {
         PrecisionModel pm = new PrecisionModel();
         GeometryFactory gf = new GeometryFactory(pm, 4326);
         CoordinateArraySequence cas =
