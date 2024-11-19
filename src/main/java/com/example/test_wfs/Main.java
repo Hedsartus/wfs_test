@@ -23,6 +23,7 @@ import org.geotools.data.wfs.internal.TransactionResponse;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.geotools.util.factory.Hints;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -39,83 +40,97 @@ import com.example.test_wfs.geotools.WFSDataStoreFactoryImpl;
 
 
 public class Main {
-	
-	public static void main ( String[] args ) throws IOException, ParseException {
-		WFSDataStore dataStore = getDataStore();
-		
+
+    public static void main(String[] args) throws IOException, ParseException {
+        WFSDataStore dataStore = getDataStore();
+
+        System.out.println(
+                insertFeature(
+                "te:districtForEdit",
+                null,
+                fromWKT("MULTIPOLYGON (((136.50452556279708 50.64947612281738, 136.50452556279708 50.790671533584394, 136.7964825044434 50.790671533584394, 136.7964825044434 50.64947612281738, 136.50452556279708 50.64947612281738)))"),
+                dataStore,
+                false
+                ));
+
 		System.out.println(
 			insertFeature(
-				"bis:districtForEdit", 
-				null,
+				"MO:Square",
+				UUIDUtil.sqUUID().toString(),
 				fromWKT("MULTIPOLYGON (((136.50452556279708 50.64947612281738, 136.50452556279708 50.790671533584394, 136.7964825044434 50.790671533584394, 136.7964825044434 50.64947612281738, 136.50452556279708 50.64947612281738)))"),
-				dataStore));
-	}
-	
-	public static String insertFeature ( String lName, String id, Geometry geom, WFSDataStore dataStore ) throws IOException {
-		SimpleFeatureType sft = dataStore.getSchema(lName);
-		QName qName = dataStore.getRemoteTypeName(sft.getName());
-		
-		String geomColumn = sft.getGeometryDescriptor()
-			.getName()
-			.getLocalPart();
-		
-		SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-		typeBuilder.setCRS(DefaultGeographicCRS.WGS84);
-		typeBuilder.setNamespaceURI(qName.getNamespaceURI());
-		typeBuilder.setName(qName.getLocalPart());
-		
-		typeBuilder.add(geomColumn, Geometry.class);
-		
-		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
-		featureBuilder.add(geom);
-		
-		SimpleFeature feature = featureBuilder.buildFeature(id);
-		
-		TransactionRequest transactionRequest = dataStore.getWfsClient()
-			.createTransaction();
-		
-		TransactionRequest.Insert insert = transactionRequest.createInsert(qName);
-		insert.add(feature);
-		transactionRequest.add(insert);
-		if ( StringUtils.isNotBlank(id) )
-			transactionRequest.setProperty("idgen", "UseExisting");
-		
-		TransactionResponse response = dataStore.getWfsClient()
-			.issueTransaction(transactionRequest);
-		
-		String rid = response.getInsertedFids()
-		    .stream()
-		    .findFirst()
-		    .orElseThrow(() -> new RuntimeException("Can not extract inserted feature identifier"))
-		    .getID();
-		
-		if ( StringUtils.contains(rid, ".") )
-			rid = rid.substring(StringUtils.indexOf(rid, ".") + 1);
-		
-		return rid;
-	}
-	
-	public static WFSDataStore getDataStore () throws IOException {
-		WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
-		
-		return dsf.createDataStore(
-			new HashMap<String, Object>() { private static final long serialVersionUID = 1L; {
-				put(WFSDataAccessFactory.URL.getName(), "http://localhost:8083/geoserver/ows?service=wfs&REQUEST=GetCapabilities&version=1.1.0");
-				put(WFSDataAccessFactory.PASSWORD.getName(), "geoserver");
-				put(WFSDataAccessFactory.USERNAME.getName(), "admin");
-				put(WFSDataAccessFactory.USE_HTTP_CONNECTION_POOLING.getName(), true);
-			}});
-	}
-	
-	public static Geometry fromWKT ( String wkt ) throws ParseException {
-		WKTReader reader = new WKTReader();
-		return reader.read(wkt);
-	}
-	
-	
-	
-	
-	
+				dataStore,
+        true
+            ));
+    }
+
+    public static String insertFeature(String lName, String id, Geometry geom, WFSDataStore dataStore, boolean useIdgen) throws IOException {
+        SimpleFeatureType sft = dataStore.getSchema(lName);
+        QName qName = dataStore.getRemoteTypeName(sft.getName());
+
+        String geomColumn = sft.getGeometryDescriptor()
+                .getName()
+                .getLocalPart();
+
+        SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+        typeBuilder.setCRS(sft.getCoordinateReferenceSystem());
+        typeBuilder.setNamespaceURI(qName.getNamespaceURI());
+        typeBuilder.setName(qName.getLocalPart());
+
+        typeBuilder.add(geomColumn, Geometry.class);
+
+        SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
+        featureBuilder.add(geom);
+
+        SimpleFeature feature = featureBuilder.buildFeature(id);
+
+        if (useIdgen)
+            feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
+
+        TransactionRequest transactionRequest = dataStore.getWfsClient()
+                .createTransaction();
+
+        TransactionRequest.Insert insert = transactionRequest.createInsert(qName);
+        insert.add(feature);
+        transactionRequest.add(insert);
+        //if ( StringUtils.isNotBlank(id) ) transactionRequest.setProperty("idgen", "UseExisting");
+
+        TransactionResponse response = dataStore.getWfsClient()
+                .issueTransaction(transactionRequest);
+
+        String rid = response.getInsertedFids()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Can not extract inserted feature identifier"))
+                .getID();
+
+        if (StringUtils.contains(rid, "."))
+            rid = rid.substring(StringUtils.indexOf(rid, ".") + 1);
+
+        return rid;
+    }
+
+    public static WFSDataStore getDataStore() throws IOException {
+        WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
+
+        return dsf.createDataStore(
+                new HashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
+                    {
+                        put(WFSDataAccessFactory.URL.getName(), "http://localhost:8083/geoserver/ows?service=wfs&REQUEST=GetCapabilities&version=1.1.0");
+                        put(WFSDataAccessFactory.PASSWORD.getName(), "Cbytahby5%");
+                        put(WFSDataAccessFactory.USERNAME.getName(), "admin");
+                        put(WFSDataAccessFactory.USE_HTTP_CONNECTION_POOLING.getName(), true);
+                    }
+                });
+    }
+
+    public static Geometry fromWKT(String wkt) throws ParseException {
+        WKTReader reader = new WKTReader();
+        return reader.read(wkt);
+    }
+
+
 //    public static void main(String[] args) throws Exception {
 //        FilterFactory ff = GeotoolsXSDUtil.ff;
 //

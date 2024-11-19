@@ -5,11 +5,11 @@ import net.opengis.wfs.InsertElementType;
 import net.opengis.wfs.WfsFactory;
 import org.geotools.data.wfs.internal.TransactionRequest;
 import org.geotools.data.wfs.internal.v1_x.StrictWFS_1_x_Strategy;
+import org.geotools.util.factory.Hints;
 import org.geotools.xsd.Configuration;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.net.URI;
-import java.util.List;
 
 public class Strategy11Impl extends StrictWFS_1_x_Strategy {
 
@@ -23,14 +23,19 @@ public class Strategy11Impl extends StrictWFS_1_x_Strategy {
     protected InsertElementType createInsert(WfsFactory factory, TransactionRequest.Insert elem) throws Exception {
         InsertElementType insert = factory.createInsertElementType();
 
-        insert.setIdgen(IdentifierGenerationOptionType.USE_EXISTING_LITERAL);
-
         String srsName = getFeatureTypeInfo(elem.getTypeName()).getDefaultSRS();
         insert.setSrsName(new URI(srsName));
 
-        List<SimpleFeature> features = elem.getFeatures();
+        SimpleFeature feature = elem.getFeatures().get(0);
 
-        insert.getFeature().addAll(features);
+        boolean useExisting =
+                Boolean.TRUE.equals(feature.getUserData().get(Hints.USE_PROVIDED_FID));
+
+        if(useExisting) {
+            insert.setIdgen(IdentifierGenerationOptionType.USE_EXISTING_LITERAL);
+        }
+
+        insert.getFeature().add(feature);
 
         return insert;
     }
