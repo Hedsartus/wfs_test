@@ -28,6 +28,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.impl.CoordinateArraySequence;
@@ -37,6 +38,7 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
 import com.example.test_wfs.geotools.WFSDataStoreFactoryImpl;
+import org.opengis.referencing.operation.MathTransform;
 
 
 public class Main {
@@ -49,22 +51,25 @@ public class Main {
                 "te:districtForEdit",
                 null,
                 fromWKT("MULTIPOLYGON (((136.50452556279708 50.64947612281738, 136.50452556279708 50.790671533584394, 136.7964825044434 50.790671533584394, 136.7964825044434 50.64947612281738, 136.50452556279708 50.64947612281738)))"),
-                dataStore,
-                false
+                        dataStore
                 ));
 
-		System.out.println(
-			insertFeature(
-				"MO:Square",
-				UUIDUtil.sqUUID().toString(),
-				fromWKT("MULTIPOLYGON (((136.50452556279708 50.64947612281738, 136.50452556279708 50.790671533584394, 136.7964825044434 50.790671533584394, 136.7964825044434 50.64947612281738, 136.50452556279708 50.64947612281738)))"),
-				dataStore,
-        true
+        System.out.println(
+                insertFeature(
+                        "MO:Square",
+                        UUIDUtil.sqUUID().toString(),
+                        fromWKT("MULTIPOLYGON (((136.50452556279708 50.64947612281738, 136.50452556279708 50.790671533584394, 136.7964825044434 50.790671533584394, 136.7964825044434 50.64947612281738, 136.50452556279708 50.64947612281738)))"),
+//                getGeometry(),
+                    dataStore
             ));
     }
 
-    public static String insertFeature(String lName, String id, Geometry geom, WFSDataStore dataStore, boolean useIdgen) throws IOException {
+    public static String insertFeature(String lName, String id, Geometry geom, WFSDataStore dataStore) throws IOException {
         SimpleFeatureType sft = dataStore.getSchema(lName);
+
+        MathTransform mt = GeoUtil.getMathTransform(DefaultGeographicCRS.WGS84, sft.getCoordinateReferenceSystem());
+        geom = GeoUtil.getTransformGeometry(geom, mt);
+
         QName qName = dataStore.getRemoteTypeName(sft.getName());
 
         String geomColumn = sft.getGeometryDescriptor()
@@ -76,14 +81,14 @@ public class Main {
         typeBuilder.setNamespaceURI(qName.getNamespaceURI());
         typeBuilder.setName(qName.getLocalPart());
 
-        typeBuilder.add(geomColumn, Geometry.class);
+        typeBuilder.add(geomColumn, geom.getClass());
 
         SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
         featureBuilder.add(geom);
 
         SimpleFeature feature = featureBuilder.buildFeature(id);
 
-        if (useIdgen)
+        if (StringUtils.isNotBlank(id))
             feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
 
         TransactionRequest transactionRequest = dataStore.getWfsClient()
