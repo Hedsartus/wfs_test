@@ -43,7 +43,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class GeotoolsXSDUtil {
-	
+
     public static final FilterFactory ff = CommonFactoryFinder.getFilterFactory();
 
     private static final WFSDataStoreFactoryImpl dsf = new WFSDataStoreFactoryImpl();
@@ -145,15 +145,17 @@ public class GeotoolsXSDUtil {
             return feature;
     }
 
-    public static boolean updateGeometry(Geometry geometry, String sid) {
-        WFSDataStore dataStore = getDataStore();
-
+    public static boolean updateGeometry(String lName, Geometry geometry, String sid, WFSDataStore dataStore) {
         try {
-            SimpleFeatureType sft = dataStore.getSchema("bis:Square");
+            SimpleFeatureType sft = dataStore.getSchema(lName);
 
-            QName qName = dataStore.getRemoteTypeName(
-            	sft.getName());
-            
+            QName qName = dataStore.getRemoteTypeName(sft.getName());
+
+			geometry = GeoUtil.transform(
+				geometry,
+				DefaultGeographicCRS.WGS84,
+				sft.getCoordinateReferenceSystem());
+
             String geomColumn = sft.getGeometryDescriptor()
             	.getName()
             	.getLocalPart();
@@ -205,8 +207,6 @@ public class GeotoolsXSDUtil {
 
         SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(type);
         featureBuilder.add(geometry);
-        featureBuilder.featureUserData(Hints.USE_PROVIDED_FID, true);
-        //featureBuilder.featureUserData(Hints.PROVIDED_FID, key);
 
         SimpleFeature feature = featureBuilder.buildFeature(key);
         feature.getUserData().put(Hints.USE_PROVIDED_FID, true);
@@ -238,7 +238,6 @@ public class GeotoolsXSDUtil {
         CoordinateReferenceSystem crs = sft.getCoordinateReferenceSystem();
 
         // получение названия колонки с геометрией
-//        String geomColumn = getGeomColumn(dataStore, qName);
         String geomColumn = sft.getGeometryDescriptor()
         	.getName()
         	.getLocalPart();
@@ -290,7 +289,6 @@ public class GeotoolsXSDUtil {
         TransactionRequest transactionRequest = dataStore.getWfsClient().createTransaction();
         TransactionRequest.Update update = transactionRequest.createUpdate(qName, columns, values, filter);
         transactionRequest.add(update);
-//        transactionRequest.setProperty("encoding", GML._Geometry.getLocalPart());
 
         return transaction(dataStore, transactionRequest, TransactionResponse::getUpdatedCount) > 0;
     }
